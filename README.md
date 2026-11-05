@@ -7,9 +7,9 @@ of icons opens around the cursor, point at one and let go to use it.
 Rings fill themselves from your bags and spellbook, so a new potion or
 a new rank of a buff turns up without you touching anything.
 
-It borrows the ring from [OPie](https://www.townlong-yak.com/addons/opie)
-and the self-filling buttons from AutoBar. It is not affiliated with
-either and shares no code with them.
+Inspired by [OPie](https://www.townlong-yak.com/addons/opie) and
+AutoBar. It shares no code with either and is not affiliated with
+their authors.
 
 ## Installing
 
