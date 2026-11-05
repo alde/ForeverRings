@@ -1,5 +1,7 @@
 # ForeverRings
 
+<img src="assets/logo.png" alt="ForeverRings logo" width="160">
+
 Radial action rings for World of Warcraft: Forever. Hold a key, a ring
 of icons opens around the cursor, point at one and let go to use it.
 Rings fill themselves from your bags and spellbook, so a new potion or
