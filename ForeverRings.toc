@@ -2,7 +2,7 @@
 ## Title: ForeverRings
 ## Notes: Hold a key to open a ring of consumables, spells and macros, filled from your bags and spellbook.
 ## Author: alde
-## Version: 0.2.0
+## Version: 0.2.1
 ## SavedVariables: ForeverRingsDB
 ## AddonCompartmentFunc: ForeverRings_OpenOptions
 
