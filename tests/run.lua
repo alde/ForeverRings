@@ -442,5 +442,57 @@ test("snippet agrees with Layout.NearestSlice all round the ring", function()
     end
 end)
 
+---------------------------------------------------------------- Cooldowns
+
+-- Stand-ins for the game's cooldown APIs, set before Cooldowns.lua loads
+-- because it captures some of them at load time.
+local itemCooldowns, spellDurations, macroSpells, macroItems = {}, {}, {}, {}
+C_Item = {
+    GetItemCooldown = function(itemID) return unpack(itemCooldowns[itemID] or { 0, 0, 1 }) end,
+    GetItemInfoInstant = function(link) return tonumber(link:match("item:(%d+)")) end,
+}
+C_Spell = { GetSpellCooldownDuration = function(spellID) return spellDurations[spellID] end }
+GetMacroSpell = function(name) return macroSpells[name] end
+GetMacroItem = function(name) return nil, macroItems[name] end
+CooldownFrame_Set = function(cooldown, start, duration) cooldown.shown = { "item", start, duration } end
+assert(loadfile("Cooldowns.lua"))("ForeverRings", ns)
+
+local function CooldownFrame()
+    return {
+        SetCooldownFromDurationObject = function(self, object) self.shown = { "spell", object } end,
+        Clear = function(self) self.shown = { "clear" } end,
+    }
+end
+
+local function shown(action)
+    local cooldown = CooldownFrame()
+    ns.Cooldowns.Show(cooldown, action)
+    return table.concat(cooldown.shown, ",")
+end
+
+test("an item slice shows the item's cooldown", function()
+    itemCooldowns[118] = { 100, 120, 1 }
+    eq(shown({ type = "item", itemID = 118 }), "item,100,120")
+end)
+
+test("a spell slice passes the duration object straight through", function()
+    spellDurations[1459] = "duration-object"
+    eq(shown({ type = "spell", spellID = 1459 }), "spell,duration-object")
+end)
+
+test("a macro shows the cooldown of the spell it casts", function()
+    macroSpells.Nuke, spellDurations[133] = 133, "fireball-duration"
+    eq(shown({ type = "macro", value = "Nuke" }), "spell,fireball-duration")
+end)
+
+test("a macro shows the cooldown of the item it uses", function()
+    macroItems.Pot, itemCooldowns[929] = "|Hitem:929::|h[Healing Potion]|h", { 50, 120, 1 }
+    eq(shown({ type = "macro", value = "Pot" }), "item,50,120")
+end)
+
+test("a macro with neither spell nor item clears the swipe", function()
+    eq(shown({ type = "macro", value = "Chat" }), "clear")
+end)
+
 print(("%d passed, %d failed"):format(passed, failures))
 os.exit(failures == 0 and 0 or 1)

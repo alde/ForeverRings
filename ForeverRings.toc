@@ -12,6 +12,7 @@ Actions.lua
 Layout.lua
 Animation.lua
 Context.lua
+Cooldowns.lua
 Config.lua
 Ring.lua
 Core.lua

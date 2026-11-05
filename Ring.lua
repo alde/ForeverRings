@@ -96,12 +96,20 @@ local function CreateSlice(header)
     slice:SetSize(SLICE_SIZE, SLICE_SIZE)
     slice.icon = slice:CreateTexture(nil, "ARTWORK")
     slice.icon:SetAllPoints()
-    slice.highlight = slice:CreateTexture(nil, "OVERLAY")
+    slice.cooldown = CreateFrame("Cooldown", nil, slice, "CooldownFrameTemplate")
+    slice.cooldown:SetAllPoints()
+    slice.cooldown:SetHideCountdownNumbers(false) -- show seconds left whatever the CVar says
+    -- The cooldown swipe is a child frame and would cover the slice's own
+    -- regions, so the highlight and stack count sit on a frame above it.
+    local overlay = CreateFrame("Frame", nil, slice)
+    overlay:SetAllPoints()
+    overlay:SetFrameLevel(slice.cooldown:GetFrameLevel() + 1)
+    slice.highlight = overlay:CreateTexture(nil, "OVERLAY")
     slice.highlight:SetAllPoints()
     slice.highlight:SetTexture(HIGHLIGHT_TEXTURE)
     slice.highlight:SetBlendMode("ADD")
     slice.highlight:Hide()
-    slice.count = slice:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+    slice.count = overlay:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
     slice.count:SetPoint("BOTTOMRIGHT", -2, 2)
     return slice
 end
@@ -115,6 +123,29 @@ end
 local RingMixin = {}
 local createdRings = 0
 
+-- Cooldowns only need refreshing while the ring is on screen.
+local COOLDOWN_EVENTS = { "SPELL_UPDATE_COOLDOWN", "BAG_UPDATE_COOLDOWN" }
+
+local function WireScripts(ring)
+    local header = ring.header
+    header:HookScript("OnShow", function()
+        ring:StartAnimation()
+        ring:RefreshCooldowns()
+    end)
+    header:HookScript("OnHide", function() ring:SetHovered(nil) end)
+    header:SetScript("OnUpdate", function()
+        ring:Animate()
+        ring:TrackHoveredSlice()
+    end)
+    local events = CreateFrame("Frame")
+    for _, event in ipairs(COOLDOWN_EVENTS) do
+        events:RegisterEvent(event)
+    end
+    events:SetScript("OnEvent", function()
+        if header:IsShown() then ring:RefreshCooldowns() end
+    end)
+end
+
 function ns.Ring.Create()
     createdRings = createdRings + 1
     local header = CreateHeader()
@@ -125,12 +156,7 @@ function ns.Ring.Create()
         actions = {},
         directions = {},
     }, { __index = RingMixin })
-    header:HookScript("OnShow", function() ring:StartAnimation() end)
-    header:HookScript("OnHide", function() ring:SetHovered(nil) end)
-    header:SetScript("OnUpdate", function()
-        ring:Animate()
-        ring:TrackHoveredSlice()
-    end)
+    WireScripts(ring)
     return ring
 end
 
@@ -196,6 +222,13 @@ function RingMixin:RefreshCounts()
         if action.itemID then
             ShowCount(self.slices[index], GetItemCount(action.itemID))
         end
+    end
+end
+
+-- Safe in combat: cooldown frames are not protected.
+function RingMixin:RefreshCooldowns()
+    for index, action in ipairs(self.actions) do
+        ns.Cooldowns.Show(self.slices[index].cooldown, action)
     end
 end
 
