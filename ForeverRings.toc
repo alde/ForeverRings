@@ -1,0 +1,19 @@
+## Interface: 16001
+## Title: ForeverRings
+## Notes: Hold a key to open a ring of consumables, spells and macros, filled from your bags and spellbook.
+## Author: alde
+## Version: 0.2.0
+## SavedVariables: ForeverRingsDB
+## AddonCompartmentFunc: ForeverRings_OpenOptions
+
+SpellLists.lua
+Categories.lua
+Actions.lua
+Layout.lua
+Animation.lua
+Context.lua
+Config.lua
+Ring.lua
+Core.lua
+Commands.lua
+Options.lua
