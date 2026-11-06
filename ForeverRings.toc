@@ -1,9 +1,11 @@
 ## Interface: 16001
 ## Title: ForeverRings
-## Notes: Hold a key to open a ring of consumables, spells and macros, filled from your bags and spellbook.
-## Author: alde
-## Version: 0.2.1
+## Version: 9
+## Notes: Radial action rings that fill themselves
+## Author: Rickard Dybeck
+## IconTexture: Interface\Icons\INV_Misc_Bag_08
 ## SavedVariables: ForeverRingsDB
+## Category: Action Bars
 ## AddonCompartmentFunc: ForeverRings_OpenOptions
 
 SpellLists.lua

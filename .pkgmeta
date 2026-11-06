@@ -1,0 +1,7 @@
+# .pkgmeta - CurseForge packaging configuration for ForeverRings
+
+package-as: ForeverRings
+
+ignore:
+  - tests
+  - assets

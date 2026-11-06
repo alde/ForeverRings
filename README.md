@@ -147,6 +147,17 @@ Saved settings live in `ForeverRingsDB` and are upgraded through
 numbered migrations in `Config.lua`, so an upgrade never brings back a
 default ring you deleted.
 
+## Releasing
+
+Releases follow Hearths: `## Version` in the TOC is a plain number.
+
+1. Bump `## Version` and commit it as `chore: bump version to N`.
+2. Tag the commit `N` and push the tag.
+
+The tag starts the GitHub Actions workflow, which packages the addon
+with the [BigWigs packager](https://github.com/BigWigsMods/packager).
+`.pkgmeta` leaves `tests/` and `assets/` out of the download.
+
 ## Tests
 
 The pure modules, the secure snippet, the settings migrations and the
@@ -159,3 +170,6 @@ luajit tests/run.lua
 Anything that needs real frames (the panel layout, key capture, combat
 behaviour) still has to be checked in game.
 
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).
