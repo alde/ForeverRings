@@ -92,6 +92,7 @@ local handlers = {
     GET_ITEM_INFO_RECEIVED = ns.RequestRebuild,
     SPELLS_CHANGED = ns.RequestRebuild,
     UPDATE_MACROS = ns.RequestRebuild,
+    NEW_MOUNT_ADDED = ns.RequestRebuild,
 }
 
 local eventFrame = CreateFrame("Frame")
@@ -101,3 +102,8 @@ end
 eventFrame:SetScript("OnEvent", function(_, event, ...)
     handlers[event](...)
 end)
+
+-- Favouriting a mount fires no event of its own.
+if C_MountJournal then
+    hooksecurefunc(C_MountJournal, "SetIsFavorite", function() ns.RequestRebuild() end)
+end

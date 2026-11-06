@@ -39,7 +39,7 @@ up when combat ends.
 
 ## Rings
 
-A fresh install comes with four unbound rings:
+A fresh install comes with five unbound rings:
 
 | Ring        | Holds                                                             |
 |-------------|-------------------------------------------------------------------|
@@ -47,6 +47,7 @@ A fresh install comes with four unbound rings:
 | Travel      | Hearthstone, teleports, portals                                   |
 | Buffs       | Class buffs, conjured food and water included                     |
 | Quest       | Quest items you can use                                           |
+| Mounts      | Random favourite mount, then each favourite                       |
 
 A ring is an ordered list of slots. Each slot is either:
 
@@ -73,6 +74,12 @@ the Up and Down buttons in the options window.
 | Teleports          | one per spell | Mage teleports, Moonglade, Astral Recall, Death Gate |
 | Portals            | one per spell | Mage portals                                  |
 | Class Buffs        | one per spell | Buffs, armours, aspects, blessings, conjuring |
+| Random Favourite Mount | one       | The mount journal's random favourite          |
+| Favourite Mounts   | one per mount | Collected favourites, by name                 |
+
+Mounts come from the mount journal. A mount you can't use where you
+are still shows, rather than the ring emptying every time you go
+indoors.
 
 "Best" means highest item level, then newest item. Items above your
 level are skipped. Spells cast by name, so you always get the highest
@@ -124,7 +131,7 @@ round the ring to keep them in agreement.
 | `Actions.lua`     | Turns a ring's slots into slices (pure)                   |
 | `Layout.lua`      | Slice directions and hit-testing (pure)                   |
 | `Animation.lua`   | Spawn animation poses (pure)                              |
-| `Context.lua`     | Reads bags, spells and macros for `Actions.lua`           |
+| `Context.lua`     | Reads bags, spells, macros and mounts for `Actions.lua`   |
 | `Cooldowns.lua`   | Puts item, spell and macro cooldowns on a slice           |
 | `Config.lua`      | Saved settings, migrations and every change to them       |
 | `Ring.lua`        | The ring frames, secure snippet, tooltip and animation    |
@@ -147,3 +154,4 @@ luajit tests/run.lua
 
 Anything that needs real frames (the panel layout, key capture, combat
 behaviour) still has to be checked in game.
+

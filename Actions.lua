@@ -44,6 +44,9 @@ local function ExpandCategory(context, key)
     if not category then
         return {}
     end
+    if category.collect then
+        return category.collect(context)
+    end
     if category.spellIDs then
         return KnownSpells(context, category)
     end

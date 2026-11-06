@@ -1,5 +1,6 @@
 -- Category definitions. An item category matches bag items; a spell
--- category lists spells to offer when the player knows them. A "best"
+-- category lists spells to offer when the player knows them; a collect
+-- category asks the context for its actions directly. A "best" item
 -- category fills a single slice with its best item, AutoBar style.
 local _, ns = ...
 
@@ -27,6 +28,17 @@ local USE_SPELL = {
 local HEARTHSTONE_ITEM_IDS = {
     [6948] = true, -- Hearthstone
 }
+
+local function ByLabel(a, b)
+    return a.label < b.label
+end
+
+local function SortedByLabel(actions)
+    local sorted = {}
+    for index, action in ipairs(actions) do sorted[index] = action end
+    table.sort(sorted, ByLabel)
+    return sorted
+end
 
 local function IsConsumable(item, ...)
     if item.classID ~= CONSUMABLE_CLASS then
@@ -99,6 +111,14 @@ local CATEGORIES = {
     { key = "teleport", label = "Teleports", spellIDs = ns.SpellLists.teleport },
     { key = "portal", label = "Portals", spellIDs = ns.SpellLists.portal },
     { key = "buff", label = "Class Buffs", spellIDs = ns.SpellLists.buff },
+    {
+        key = "randommount", label = "Random Favourite Mount",
+        collect = function(context) return { context.randomFavoriteMount() } end,
+    },
+    {
+        key = "mount", label = "Favourite Mounts",
+        collect = function(context) return SortedByLabel(context.favoriteMounts()) end,
+    },
 }
 
 local categoryByKey = {}

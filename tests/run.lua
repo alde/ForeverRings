@@ -80,7 +80,13 @@ local function context(bags, options)
         macro = function(name)
             return macros[name] and { type = "macro", value = name } or nil
         end,
+        randomFavoriteMount = function() return options.randomMount end,
+        favoriteMounts = function() return options.mounts or {} end,
     }
+end
+
+local function mount(name)
+    return { type = "spell", value = name, label = name }
 end
 
 local function categories(...)
@@ -168,6 +174,17 @@ test("offers known class buffs, conjuring included", function()
     eq(values(resolve(categories("buff"), context({}, { knownSpells = known }), 12)), "Arcane Intellect,Conjure Water")
 end)
 
+test("random favourite mount is one slice when the journal offers it", function()
+    local game = context({}, { randomMount = { type = "spell", value = 150544, label = "Random" } })
+    eq(values(resolve(categories("randommount"), game, 12)), "150544")
+    eq(values(resolve(categories("randommount"), context({}), 12)), "", "unavailable")
+end)
+
+test("favourite mounts come one per slice, sorted by name", function()
+    local game = context({}, { mounts = { mount("Swift Razzashi Raptor"), mount("Black Stallion") } })
+    eq(values(resolve(categories("mount"), game, 12)), "Black Stallion,Swift Razzashi Raptor")
+end)
+
 test("mixes fixed entries with categories in slot order", function()
     local slots = { { macro = "Mount" }, { category = "food" }, { item = 6948 }, { spell = 1459 } }
     local game = context({ food(5) }, { knownSpells = { [1459] = "Arcane Intellect" }, macros = { Mount = true } })
@@ -217,6 +234,7 @@ test("a fresh install gets the default rings with split categories", function()
     eq(categoryList(db.rings.Travel.slots), "hearthstone,teleport,portal")
     eq(categoryList(db.rings.Buffs.slots), "buff")
     eq(categoryList(db.rings.Quest.slots), "quest")
+    eq(categoryList(db.rings.Mounts.slots), "randommount,mount")
     eq(db.animation.style, ns.Animation.DEFAULT_STYLE)
 end)
 
@@ -233,6 +251,12 @@ test("splits version 2 slots in place and leaves fixed entries alone", function(
         Mine = { slots = { { spell = 1459 }, { category = "food" }, { category = "bandage" } } },
     } })
     eq(categoryList(db.rings.Mine.slots), "1459,food,water,bandage")
+end)
+
+test("version 3 settings gain a Mounts ring, keeping one the user made", function()
+    eq(categoryList(ns.Config.Load({ version = 3, rings = {} }).rings.Mounts.slots), "randommount,mount")
+    local own = ns.Config.Load({ version = 3, rings = { Mounts = { slots = { { macro = "Mine" } } } } })
+    eq(categoryList(own.rings.Mounts.slots), "Mine", "user's own ring")
 end)
 
 test("default rings deleted before an upgrade stay deleted", function()

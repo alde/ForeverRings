@@ -12,7 +12,8 @@ local _, ns = ...
 
 -- 1: rings held a categories list. 2: rings hold slots.
 -- 3: potions and food & drink split into best-item categories.
-local SCHEMA_VERSION = 3
+-- 4: a Mounts ring.
+local SCHEMA_VERSION = 4
 
 -- The default rings as of version 2. Later migrations bring them up to
 -- date along with everyone else's rings.
@@ -69,6 +70,9 @@ local MIGRATIONS = {
         for _, ring in pairs(db.rings) do
             ring.slots = SplitSlots(ring.slots)
         end
+    end,
+    function(db)
+        db.rings.Mounts = db.rings.Mounts or { slots = CategorySlots({ "randommount", "mount" }) }
     end,
 }
 

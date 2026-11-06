@@ -12,6 +12,9 @@ local GetSpellTexture = C_Spell and C_Spell.GetSpellTexture or GetSpellTexture
 local FIRST_BAG = 0 -- the backpack
 local LAST_BAG = NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS
 local CATEGORY_ICON = "Interface\\Icons\\INV_Misc_Bag_08"
+-- The mount journal's "Summon Random Favorite Mount" spell. With no
+-- favourites set it picks from every usable mount.
+local RANDOM_FAVORITE_MOUNT_SPELL = 150544
 
 ns.Context = {}
 
@@ -70,6 +73,36 @@ local function MacroAction(name)
     return { type = "macro", value = name, label = name, icon = icon }
 end
 
+-- Cast by ID: the spell is not in the spellbook, so it is not looked up
+-- by name like class spells are.
+local function RandomFavoriteMount()
+    local name = GetSpellName(RANDOM_FAVORITE_MOUNT_SPELL)
+    if not name or not C_MountJournal then
+        return nil
+    end
+    return {
+        type = "spell",
+        value = RANDOM_FAVORITE_MOUNT_SPELL,
+        label = name,
+        icon = GetSpellTexture(RANDOM_FAVORITE_MOUNT_SPELL),
+        spellID = RANDOM_FAVORITE_MOUNT_SPELL,
+    }
+end
+
+-- Collected favourites this character can ride. Usability is left out on
+-- purpose: it flips with every doorway and would empty the ring indoors.
+local function FavoriteMounts()
+    local mounts = {}
+    for _, mountID in ipairs(C_MountJournal and C_MountJournal.GetMountIDs() or {}) do
+        local name, spellID, icon, _, _, _, isFavorite, _, _, hiddenOnCharacter, isCollected =
+            C_MountJournal.GetMountInfoByID(mountID)
+        if isCollected and isFavorite and not hiddenOnCharacter then
+            mounts[#mounts + 1] = { type = "spell", value = name, label = name, icon = icon, spellID = spellID }
+        end
+    end
+    return mounts
+end
+
 local function CountItemsInBags()
     local counts = {}
     for bag = FIRST_BAG, LAST_BAG do
@@ -99,6 +132,8 @@ function ns.Context.Build()
         item = function(itemID) return ItemAction(itemID, GetItemCount(itemID)) end,
         spell = SpellAction,
         macro = MacroAction,
+        randomFavoriteMount = RandomFavoriteMount,
+        favoriteMounts = FavoriteMounts,
     }
 end
 
