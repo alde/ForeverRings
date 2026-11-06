@@ -244,10 +244,16 @@ end
 local function ShowTooltip(header, action)
     GameTooltip:SetOwner(header, "ANCHOR_NONE")
     GameTooltip:SetPoint("LEFT", header, "RIGHT")
-    if action.itemID then
-        GameTooltip:SetItemByID(action.itemID)
-    elseif action.spellID then
-        GameTooltip:SetSpellByID(action.spellID)
+    local kind, id = "item", action.itemID
+    if action.spellID then
+        kind, id = "spell", action.spellID
+    elseif action.type == "macro" then
+        kind, id = ns.Context.MacroTarget(action.value)
+    end
+    if kind == "item" and id then
+        GameTooltip:SetItemByID(id)
+    elseif kind == "spell" then
+        GameTooltip:SetSpellByID(id)
     else
         GameTooltip:SetText(action.label)
     end

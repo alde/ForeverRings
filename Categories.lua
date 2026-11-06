@@ -29,6 +29,9 @@ local HEARTHSTONE_ITEM_IDS = {
     [6948] = true, -- Hearthstone
 }
 
+-- The Hearths addon keeps this macro pointed at its current hearthstone.
+local HEARTHS_MACRO = { addon = "Hearths", macro = "HEARTHS_BTN" }
+
 local function ByLabel(a, b)
     return a.label < b.label
 end
@@ -105,7 +108,7 @@ local CATEGORIES = {
         matchesItem = function(item) return item.classID == QUEST_CLASS and item.hasUseEffect end,
     },
     {
-        key = "hearthstone", label = "Hearthstone", best = true,
+        key = "hearthstone", label = "Hearthstone", best = true, preferMacro = HEARTHS_MACRO,
         matchesItem = function(item) return HEARTHSTONE_ITEM_IDS[item.itemID] == true end,
     },
     { key = "teleport", label = "Teleports", spellIDs = ns.SpellLists.teleport },

@@ -8,6 +8,7 @@ local GetItemSpell = C_Item and C_Item.GetItemSpell or GetItemSpell
 local GetItemCount = C_Item and C_Item.GetItemCount or GetItemCount
 local GetSpellName = C_Spell and C_Spell.GetSpellName or function(spellID) return (GetSpellInfo(spellID)) end
 local GetSpellTexture = C_Spell and C_Spell.GetSpellTexture or GetSpellTexture
+local IsAddOnLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 
 local FIRST_BAG = 0 -- the backpack
 local LAST_BAG = NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS
@@ -134,7 +135,22 @@ function ns.Context.Build()
         macro = MacroAction,
         randomFavoriteMount = RandomFavoriteMount,
         favoriteMounts = FavoriteMounts,
+        addonLoaded = IsAddOnLoaded,
     }
+end
+
+-- What a macro would use right now: "spell", spellID or "item", itemID,
+-- or nil. Depends on the macro's conditions, so look it up each time.
+function ns.Context.MacroTarget(name)
+    local spellID = GetMacroSpell(name)
+    if spellID then
+        return "spell", spellID
+    end
+    local _, itemLink = GetMacroItem(name)
+    local itemID = itemLink and GetItemInfoInstant(itemLink)
+    if itemID then
+        return "item", itemID
+    end
 end
 
 -- Label and icon for the options list, whether or not the player can

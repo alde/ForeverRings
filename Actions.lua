@@ -39,10 +39,24 @@ local function KnownSpells(context, category)
     return actions
 end
 
+-- A category may hand its slot to another addon's macro while that
+-- addon is loaded. The addon check guards against a macro left behind
+-- after the addon was removed.
+local function PreferredMacro(context, category)
+    local preferred = category.preferMacro
+    if preferred and context.addonLoaded(preferred.addon) then
+        return context.macro(preferred.macro)
+    end
+end
+
 local function ExpandCategory(context, key)
     local category = ns.Categories.Get(key)
     if not category then
         return {}
+    end
+    local macro = PreferredMacro(context, category)
+    if macro then
+        return { macro }
     end
     if category.collect then
         return category.collect(context)

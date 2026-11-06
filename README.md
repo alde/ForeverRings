@@ -70,12 +70,16 @@ the Up and Down buttons in the options window.
 | Drink              | one, best     | Items that cast "Drink"                       |
 | Bandage            | one, best     | Bandages                                      |
 | Usable Quest Items | one per item  | Quest items with a use effect                 |
-| Hearthstone        | one           | The Hearthstone                               |
+| Hearthstone        | one           | The Hearthstone, or the Hearths macro (below) |
 | Teleports          | one per spell | Mage teleports, Moonglade, Astral Recall, Death Gate |
 | Portals            | one per spell | Mage portals                                  |
 | Class Buffs        | one per spell | Buffs, armours, aspects, blessings, conjuring |
 | Random Favourite Mount | one       | The mount journal's random favourite          |
 | Favourite Mounts   | one per mount | Collected favourites, by name                 |
+
+If the [Hearths](https://github.com/alde/hearths) addon is loaded, the
+Hearthstone slot uses its `HEARTHS_BTN` macro instead, so the ring
+rotates hearthstones along with it.
 
 Mounts come from the mount journal. A mount you can't use where you
 are still shows, rather than the ring emptying every time you go

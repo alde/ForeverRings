@@ -6,7 +6,6 @@
 local _, ns = ...
 
 local GetItemCooldown = C_Item and C_Item.GetItemCooldown or C_Container.GetItemCooldown
-local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
 
 ns.Cooldowns = {}
 
@@ -29,18 +28,12 @@ local function ShowSpellCooldown(cooldown, spellID)
     CooldownFrame_Set(cooldown, info.startTime, info.duration, info.isEnabled)
 end
 
--- A macro's spell or item depends on its conditions, so it is looked up
--- every time rather than stored on the action.
 local function ShowMacroCooldown(cooldown, name)
-    local spellID = GetMacroSpell(name)
-    if spellID then
-        ShowSpellCooldown(cooldown, spellID)
-        return
-    end
-    local _, itemLink = GetMacroItem(name)
-    local itemID = itemLink and GetItemInfoInstant(itemLink)
-    if itemID then
-        ShowItemCooldown(cooldown, itemID)
+    local kind, id = ns.Context.MacroTarget(name)
+    if kind == "spell" then
+        ShowSpellCooldown(cooldown, id)
+    elseif kind == "item" then
+        ShowItemCooldown(cooldown, id)
     else
         cooldown:Clear()
     end

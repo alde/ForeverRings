@@ -80,6 +80,7 @@ local function context(bags, options)
         macro = function(name)
             return macros[name] and { type = "macro", value = name } or nil
         end,
+        addonLoaded = function(name) return options.addons and options.addons[name] or false end,
         randomFavoriteMount = function() return options.randomMount end,
         favoriteMounts = function() return options.mounts or {} end,
     }
@@ -172,6 +173,22 @@ end)
 test("offers known class buffs, conjuring included", function()
     local known = { [1459] = "Arcane Intellect", [5504] = "Conjure Water" }
     eq(values(resolve(categories("buff"), context({}, { knownSpells = known }), 12)), "Arcane Intellect,Conjure Water")
+end)
+
+test("the hearthstone slot uses the Hearths macro while Hearths is loaded", function()
+    local game = context({ item(6948, 8, { classID = 15 }) },
+        { addons = { Hearths = true }, macros = { HEARTHS_BTN = true } })
+    eq(values(resolve(categories("hearthstone"), game, 12)), "HEARTHS_BTN")
+end)
+
+test("a Hearths macro left behind after removing Hearths is ignored", function()
+    local game = context({ item(6948, 8, { classID = 15 }) }, { macros = { HEARTHS_BTN = true } })
+    eq(values(resolve(categories("hearthstone"), game, 12)), "item:6948")
+end)
+
+test("with Hearths loaded but no macro yet, the hearthstone item is used", function()
+    local game = context({ item(6948, 8, { classID = 15 }) }, { addons = { Hearths = true } })
+    eq(values(resolve(categories("hearthstone"), game, 12)), "item:6948")
 end)
 
 test("random favourite mount is one slice when the journal offers it", function()
@@ -479,6 +496,7 @@ C_Spell = { GetSpellCooldownDuration = function(spellID) return spellDurations[s
 GetMacroSpell = function(name) return macroSpells[name] end
 GetMacroItem = function(name) return nil, macroItems[name] end
 CooldownFrame_Set = function(cooldown, start, duration) cooldown.shown = { "item", start, duration } end
+assert(loadfile("Context.lua"))("ForeverRings", ns)
 assert(loadfile("Cooldowns.lua"))("ForeverRings", ns)
 
 local function CooldownFrame()
