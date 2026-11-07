@@ -62,10 +62,12 @@ ns.SpellLists.buff = {
     976,   -- Shadow Protection
     27683, -- Prayer of Shadow Protection
     588,   -- Inner Fire
+    6346,  -- Fear Ward
     -- Druid
     1126,  -- Mark of the Wild
     21849, -- Gift of the Wild
     467,   -- Thorns
+    16864, -- Omen of Clarity
     -- Paladin
     19740, -- Blessing of Might
     19742, -- Blessing of Wisdom
@@ -73,6 +75,7 @@ ns.SpellLists.buff = {
     1038,  -- Blessing of Salvation
     19977, -- Blessing of Light
     20911, -- Blessing of Sanctuary
+    25780, -- Righteous Fury
     25782, -- Greater Blessing of Might
     25894, -- Greater Blessing of Wisdom
     25898, -- Greater Blessing of Kings
@@ -86,6 +89,10 @@ ns.SpellLists.buff = {
     -- Shaman
     324,   -- Lightning Shield
     24398, -- Water Shield
+    8017,  -- Rockbiter Weapon
+    8024,  -- Flametongue Weapon
+    8033,  -- Frostbrand Weapon
+    8232,  -- Windfury Weapon
     -- Warrior
     6673,  -- Battle Shout
     469,   -- Commanding Shout
@@ -94,6 +101,7 @@ ns.SpellLists.buff = {
     13163, -- Aspect of the Monkey
     5118,  -- Aspect of the Cheetah
     13159, -- Aspect of the Pack
+    13161, -- Aspect of the Beast
     20043, -- Aspect of the Wild
     19506, -- Trueshot Aura
 }

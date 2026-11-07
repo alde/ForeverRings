@@ -73,7 +73,7 @@ the Up and Down buttons in the options window.
 | Hearthstone        | one           | The Hearthstone, or the Hearths macro (below) |
 | Teleports          | one per spell | Mage teleports, Moonglade, Astral Recall, Death Gate |
 | Portals            | one per spell | Mage portals                                  |
-| Class Buffs        | one per spell | Buffs, armours, aspects, blessings, conjuring |
+| Class Buffs        | one per spell | Buffs, armours, aspects, blessings, weapon enchants, conjuring |
 | Random Favourite Mount | one       | The mount journal's random favourite          |
 | Favourite Mounts   | one per mount | Collected favourites, by name                 |
 
@@ -149,10 +149,11 @@ default ring you deleted.
 
 ## Releasing
 
-Releases follow Hearths: `## Version` in the TOC is a plain number.
+`## Version` in the TOC is a plain number equal to the commit count.
+Every commit bumps it by one, in the same commit, so any installed
+copy can be traced to the commit it came from.
 
-1. Bump `## Version` and commit it as `chore: bump version to N`.
-2. Tag the commit `N` and push the tag.
+To release, tag a commit with its version and push the tag.
 
 The tag starts the GitHub Actions workflow, which packages the addon
 with the [BigWigs packager](https://github.com/BigWigsMods/packager).
