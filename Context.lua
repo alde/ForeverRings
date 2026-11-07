@@ -169,6 +169,9 @@ function ns.Context.DescribeSlot(slot)
     if slot.spell then
         return GetSpellName(slot.spell) or ("spell:" .. slot.spell), GetSpellTexture(slot.spell)
     end
+    if slot.ring then
+        return "Ring: " .. slot.ring, CATEGORY_ICON
+    end
     local _, icon = GetMacroInfo(slot.macro)
     return "Macro: " .. slot.macro, icon
 end

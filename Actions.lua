@@ -2,8 +2,9 @@
 -- everything that needs the game arrives through the context table
 -- (see Context.lua), so this is unit tested.
 --
--- An action is { type = "item"|"spell"|"macro", value = <attribute value>,
--- label, icon, count (items only), itemID (items only) }.
+-- An action is { type = "item"|"spell"|"macro"|"ring",
+-- value = <attribute value, or ring name>, label, icon,
+-- count (items only), itemID (items only) }.
 local _, ns = ...
 
 ns.Actions = {}
@@ -73,6 +74,7 @@ local function ExpandSlot(context, slot)
     if slot.item then return { context.item(slot.item) } end
     if slot.spell then return { context.spell(slot.spell) } end
     if slot.macro then return { context.macro(slot.macro) } end
+    if slot.ring then return { context.ring(slot.ring) } end
     return {}
 end
 
@@ -92,4 +94,20 @@ function ns.Actions.Resolve(slots, context, maxSlices)
         end
     end
     return selected
+end
+
+-- The slice that opens ring targetName from ring parentName, or nil when
+-- the target is missing, empty or the parent itself. The target's own
+-- ring slots are ignored: nesting goes one level deep.
+function ns.Actions.SubringAction(rings, context, parentName, targetName, maxSlices)
+    local config = rings[targetName]
+    if not config or targetName == parentName then
+        return nil
+    end
+    local flat = setmetatable({ ring = function() return nil end }, { __index = context })
+    local actions = ns.Actions.Resolve(config.slots, flat, maxSlices)
+    if #actions == 0 then
+        return nil
+    end
+    return { type = "ring", value = targetName, label = targetName, icon = actions[1].icon }
 end

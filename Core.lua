@@ -39,13 +39,26 @@ local function EnsureRingObjects()
     end
 end
 
+local function ContextFor(context, ringName)
+    return setmetatable({
+        ring = function(targetName)
+            return ns.Actions.SubringAction(ForeverRingsDB.rings, context, ringName, targetName, ns.Ring.MAX_SLICES)
+        end,
+    }, { __index = context })
+end
+
+local function HeaderForRing(name)
+    return ringObjects[name] and ringObjects[name].header
+end
+
 -- Rings deleted from settings keep their frames but go empty.
 function ns.RebuildRings()
     EnsureRingObjects()
     local context = ns.Context.Build()
     for name, ring in pairs(ringObjects) do
         local config = ForeverRingsDB.rings[name]
-        ring:SetActions(config and ns.Actions.Resolve(config.slots, context, ns.Ring.MAX_SLICES) or {})
+        local actions = config and ns.Actions.Resolve(config.slots, ContextFor(context, name), ns.Ring.MAX_SLICES)
+        ring:SetActions(actions or {}, HeaderForRing)
     end
 end
 

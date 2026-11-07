@@ -53,7 +53,10 @@ A ring is an ordered list of slots. Each slot is either:
 
 - a **category**, which fills itself, or
 - a **fixed** spell, item or macro, dragged in from the spellbook, bags
-  or macro window.
+  or macro window, or
+- **another ring**. Moving onto its slice while holding the key opens
+  that ring around the cursor in place of this one; aim and release as
+  usual. Nesting goes one level deep, and a ring can't open itself.
 
 A ring shows its first 12 actions in slot order. Change the order with
 the Up and Down buttons in the options window.

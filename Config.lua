@@ -7,7 +7,7 @@
 --   animation = { style = "grow", duration = 0.15 },
 -- }
 -- A slot is one of { category = key }, { item = itemID },
--- { spell = spellID } or { macro = name }.
+-- { spell = spellID }, { macro = name } or { ring = name }.
 local _, ns = ...
 
 -- 1: rings held a categories list. 2: rings hold slots.
@@ -153,6 +153,7 @@ local function SlotKey(slot)
     if slot.category then return "category:" .. slot.category end
     if slot.item then return "item:" .. slot.item end
     if slot.spell then return "spell:" .. slot.spell end
+    if slot.ring then return "ring:" .. slot.ring end
     return "macro:" .. slot.macro
 end
 

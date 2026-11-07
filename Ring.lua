@@ -14,11 +14,17 @@ local SLICE_SIZE = 40
 local RING_RADIUS = 90
 -- Releasing within this many pixels of the centre cancels.
 local DEADZONE = 20
+-- Hover targets for ring slices are this much larger than the icon, so
+-- a sub-ring opens without pinpoint aim.
+local SUBRING_HIT_SCALE = 1.5
 local HIGHLIGHT_TEXTURE = "Interface\\Buttons\\ButtonHilight-Square"
 
 ns.Ring = { MAX_SLICES = 12 }
 
 -- Restricted Lua: self is the binding button, owner the ring header.
+-- A slice of type "ring" opens another ring's header (frame ref
+-- "subring-<index>") when hovered, replacing this one; key up then uses
+-- whichever of the two is on screen. One level deep only.
 -- The slice choice mirrors ns.Layout.NearestSlice; keep them in step.
 -- Each slice's action type ("item", "spell" or "macro") doubles as the
 -- name of the attribute SecureActionButtonTemplate reads its value from.
@@ -27,6 +33,15 @@ local CLICK_SNIPPET = [[
     local mouseX, mouseY = screen:GetMousePosition()
     if not mouseX then return false end
     local x, y = mouseX * screen:GetWidth(), mouseY * screen:GetHeight()
+
+    local active = owner:IsShown() and owner or nil
+    for index = 1, owner:GetAttribute("slice-count") do
+        local subring = owner:GetFrameRef("subring-" .. index)
+        if subring and subring:IsShown() then
+            active = subring
+            if down then subring:Hide() end
+        end
+    end
 
     if down then
         owner:SetAttribute("center-x", x)
@@ -37,24 +52,44 @@ local CLICK_SNIPPET = [[
         return false
     end
 
-    if not owner:IsShown() then return false end
-    owner:Hide()
+    if not active then return false end
+    active:Hide()
 
-    local dx, dy = x - owner:GetAttribute("center-x"), y - owner:GetAttribute("center-y")
-    local deadzone = owner:GetAttribute("deadzone")
+    local dx, dy = x - active:GetAttribute("center-x"), y - active:GetAttribute("center-y")
+    local deadzone = active:GetAttribute("deadzone")
     if dx * dx + dy * dy < deadzone * deadzone then return false end
 
     local best, bestDot
-    for index = 1, owner:GetAttribute("slice-count") do
-        local dot = dx * owner:GetAttribute("slice-x-" .. index)
-                  + dy * owner:GetAttribute("slice-y-" .. index)
+    for index = 1, active:GetAttribute("slice-count") do
+        local dot = dx * active:GetAttribute("slice-x-" .. index)
+                  + dy * active:GetAttribute("slice-y-" .. index)
         if not bestDot or dot > bestDot then best, bestDot = index, dot end
     end
     if not best then return false end
-    local actionType = owner:GetAttribute("slice-type-" .. best)
+    local actionType = active:GetAttribute("slice-type-" .. best)
+    if actionType == "ring" then return false end
     self:SetAttribute("type", actionType)
-    self:SetAttribute(actionType, owner:GetAttribute("slice-value-" .. best))
+    self:SetAttribute(actionType, active:GetAttribute("slice-value-" .. best))
 ]]
+
+-- Restricted Lua, run when the cursor enters a ring slice's hover
+-- target: self is that target, owner the ring header. Opens the
+-- sub-ring centred on the cursor and hides this ring.
+local OPEN_SUBRING_SNIPPET = [[
+    local subring = owner:GetFrameRef("subring-" .. self:GetAttribute("slice-index"))
+    if not subring or not owner:IsShown() then return end
+    local screen = owner:GetFrameRef("screen")
+    local mouseX, mouseY = screen:GetMousePosition()
+    if not mouseX then return end
+    local x, y = mouseX * screen:GetWidth(), mouseY * screen:GetHeight()
+    subring:SetAttribute("center-x", x)
+    subring:SetAttribute("center-y", y)
+    subring:ClearAllPoints()
+    subring:SetPoint("CENTER", screen, "BOTTOMLEFT", x, y)
+    owner:Hide()
+    subring:Show()
+]]
+ns.Ring.OPEN_SUBRING_SNIPPET = OPEN_SUBRING_SNIPPET
 ns.Ring.CLICK_SNIPPET = CLICK_SNIPPET
 
 local screen
@@ -114,6 +149,19 @@ local function CreateSlice(header)
     return slice
 end
 
+-- Protected, so restricted code can react to the cursor entering it.
+-- The icon underneath stays insecure so it can animate in combat.
+local function CreateSubringHitFrame(header, index)
+    local hit = CreateFrame("Frame", nil, header, "SecureHandlerBaseTemplate")
+    hit:SetSize(SLICE_SIZE * SUBRING_HIT_SCALE, SLICE_SIZE * SUBRING_HIT_SCALE)
+    hit:SetFrameLevel(header:GetFrameLevel() + 10)
+    hit:EnableMouse(true)
+    hit:SetAttribute("slice-index", index)
+    SecureHandlerWrapScript(hit, "OnEnter", header, OPEN_SUBRING_SNIPPET)
+    hit:Hide()
+    return hit
+end
+
 -- count is nil for spells and macros, which have no stack to show.
 local function ShowCount(slice, count)
     slice.count:SetText(count and count > 1 and count or "")
@@ -153,6 +201,7 @@ function ns.Ring.Create()
         header = header,
         button = CreateBindingButton(createdRings, header),
         slices = {},
+        subringHits = {},
         actions = {},
         directions = {},
     }, { __index = RingMixin })
@@ -160,18 +209,39 @@ function ns.Ring.Create()
     return ring
 end
 
--- Out of combat only.
-function RingMixin:SetActions(actions)
+-- Out of combat only. headerForRing(name) returns another ring's header,
+-- for slices that open it.
+function RingMixin:SetActions(actions, headerForRing)
     self:SetHovered(nil) -- the old index may not exist in the new list
     self.actions = actions
     self.directions = ns.Layout.SliceDirections(#actions)
     self.header:SetAttribute("slice-count", #actions)
     for index, action in ipairs(actions) do
         self:ConfigureSlice(index, action, self.directions[index])
+        self:ConfigureSubring(index, action, headerForRing)
     end
     for index = #actions + 1, #self.slices do
         self.slices[index]:Hide()
     end
+    for index = #actions + 1, #self.subringHits do
+        self.subringHits[index]:Hide()
+    end
+end
+
+function RingMixin:ConfigureSubring(index, action, headerForRing)
+    local target = action.type == "ring" and headerForRing(action.value)
+    if target then
+        SecureHandlerSetFrameRef(self.header, "subring-" .. index, target)
+    else
+        self.header:SetAttribute("frameref-subring-" .. index, nil)
+    end
+    if not target and not self.subringHits[index] then return end
+    local hit = self.subringHits[index] or CreateSubringHitFrame(self.header, index)
+    self.subringHits[index] = hit
+    local direction = self.directions[index]
+    hit:ClearAllPoints()
+    hit:SetPoint("CENTER", self.header, "CENTER", direction.x * RING_RADIUS, direction.y * RING_RADIUS)
+    hit:SetShown(target ~= nil)
 end
 
 function RingMixin:ConfigureSlice(index, action, direction)

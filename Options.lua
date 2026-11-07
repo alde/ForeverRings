@@ -289,13 +289,26 @@ local function BuildKeyRow(anchor)
     return label
 end
 
+-- Other rings can be added as slices that open them; never the ring
+-- being edited.
+local function AddRingEntries(root)
+    root:CreateDivider()
+    root:CreateTitle("Open another ring")
+    for _, name in ipairs(Config.RingNames()) do
+        if name ~= selectedRing then
+            root:CreateButton(name, function() AddSlot({ ring = name }) end)
+        end
+    end
+end
+
 local function BuildAddRow(anchor)
     widgets.addCategory = Dropdown(content, 200, function(_, root)
         for _, category in ipairs(ns.Categories.All()) do
             root:CreateButton(category.label, function() AddSlot({ category = category.key }) end)
         end
+        AddRingEntries(root)
     end)
-    widgets.addCategory:SetDefaultText("Add a category...")
+    widgets.addCategory:SetDefaultText("Add a category or ring...")
     widgets.addCategory:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -SECTION_GAP)
     widgets.drop = Button(content, "Drop a spell, item or macro here", 260, AcceptCursor)
     widgets.drop:SetScript("OnReceiveDrag", AcceptCursor)

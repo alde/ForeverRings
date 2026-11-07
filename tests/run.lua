@@ -202,6 +202,40 @@ test("favourite mounts come one per slice, sorted by name", function()
     eq(values(resolve(categories("mount"), game, 12)), "Black Stallion,Swift Razzashi Raptor")
 end)
 
+test("a ring slot becomes one slice when the context offers that ring", function()
+    local game = context({})
+    game.ring = function(name)
+        return name == "Fire" and { type = "ring", value = "Fire" } or nil
+    end
+    eq(values(resolve({ { ring = "Fire" }, { ring = "Gone" } }, game, 12)), "Fire")
+end)
+
+local function subring(rings, parent, target, game)
+    return ns.Actions.SubringAction(rings, game or context({}), parent, target, 12)
+end
+
+test("a sub-ring slice shows the target's first icon and opens it", function()
+    local rings = { Fire = { slots = { { macro = "Searing" } } } }
+    local game = context({}, { macros = { Searing = true } })
+    local action = subring(rings, "Totems", "Fire", game)
+    eq(action.type, "ring")
+    eq(action.value, "Fire")
+end)
+
+test("no sub-ring slice for a missing, empty or self-referencing ring", function()
+    local rings = { Empty = { slots = {} }, Totems = { slots = { { ring = "Totems" } } } }
+    eq(subring(rings, "Totems", "Gone"), nil, "missing")
+    eq(subring(rings, "Totems", "Empty"), nil, "empty")
+    eq(subring(rings, "Totems", "Totems"), nil, "itself")
+end)
+
+test("a sub-ring's own ring slots are ignored, so nesting stops at one level", function()
+    local rings = { Middle = { slots = { { ring = "Inner" } } }, Inner = { slots = { { macro = "X" } } } }
+    local game = context({}, { macros = { X = true } })
+    game.ring = function(name) return subring(rings, "Middle", name, game) end
+    eq(subring(rings, "Outer", "Middle", game), nil)
+end)
+
 test("mixes fixed entries with categories in slot order", function()
     local slots = { { macro = "Mount" }, { category = "food" }, { item = 6948 }, { spell = 1459 } }
     local game = context({ food(5) }, { knownSpells = { [1459] = "Arcane Intellect" }, macros = { Mount = true } })
@@ -402,43 +436,68 @@ end)
 
 ---------------------------------------------------------------- secure snippet
 
--- Runs the restricted click snippet against fake frame handles.
-local function SnippetHarness(sliceDirections, sliceTypes)
-    local function Handle(attributes)
-        local handle = { attributes = attributes or {}, shown = false }
-        function handle:GetAttribute(name) return self.attributes[name] end
-        function handle:SetAttribute(name, value) self.attributes[name] = value end
-        function handle:Show() self.shown = true end
-        function handle:Hide() self.shown = false end
-        function handle:IsShown() return self.shown end
-        function handle:ClearAllPoints() end
-        function handle:SetPoint() end
-        return handle
+-- Runs the restricted snippets against fake frame handles.
+local function Handle(attributes)
+    local handle = { attributes = attributes or {}, shown = false, refs = {} }
+    function handle:GetAttribute(name) return self.attributes[name] end
+    function handle:SetAttribute(name, value) self.attributes[name] = value end
+    function handle:GetFrameRef(label) return self.refs[label] end
+    function handle:Show() self.shown = true end
+    function handle:Hide() self.shown = false end
+    function handle:IsShown() return self.shown end
+    function handle:ClearAllPoints() end
+    function handle:SetPoint() end
+    return handle
+end
+
+-- A ring header with slices; values are "<prefix>value-<index>".
+local function Header(screen, sliceDirections, sliceTypes, prefix)
+    local header = Handle({ deadzone = DEADZONE, ["slice-count"] = #sliceDirections })
+    header.refs.screen = screen
+    for index, direction in ipairs(sliceDirections) do
+        header.attributes["slice-x-" .. index] = direction.x
+        header.attributes["slice-y-" .. index] = direction.y
+        header.attributes["slice-type-" .. index] = sliceTypes and sliceTypes[index] or "item"
+        header.attributes["slice-value-" .. index] = (prefix or "") .. "value-" .. index
     end
+    return header
+end
+
+local function Snippet(source, signature, owner)
+    local chunk = assert(loadstring(signature .. "\n" .. source))
+    setfenv(chunk, { owner = owner })
+    return chunk
+end
+
+-- subrings maps a slice index of the main ring to the slice types of
+-- the ring it opens, which always has four slices.
+local function SnippetHarness(sliceDirections, sliceTypes, subrings)
     local screen = Handle()
     screen.mouse = { 0.5, 0.5 }
     function screen:GetMousePosition() return self.mouse[1], self.mouse[2] end
     function screen:GetWidth() return 1000 end
     function screen:GetHeight() return 1000 end
 
-    local owner = Handle({ deadzone = DEADZONE, ["slice-count"] = #sliceDirections })
-    function owner:GetFrameRef() return screen end
-    for index, direction in ipairs(sliceDirections) do
-        owner.attributes["slice-x-" .. index] = direction.x
-        owner.attributes["slice-y-" .. index] = direction.y
-        owner.attributes["slice-type-" .. index] = sliceTypes and sliceTypes[index] or "item"
-        owner.attributes["slice-value-" .. index] = "value-" .. index
+    local owner = Header(screen, sliceDirections, sliceTypes)
+    local opened = {}
+    for index, types in pairs(subrings or {}) do
+        opened[index] = Header(screen, ns.Layout.SliceDirections(4), types, "sub" .. index .. "-")
+        owner.refs["subring-" .. index] = opened[index]
     end
-
-    local snippet = assert(loadstring("local self, button, down = ...\n" .. ns.Ring.CLICK_SNIPPET))
-    setfenv(snippet, { owner = owner })
+    local click = Snippet(ns.Ring.CLICK_SNIPPET, "local self, button, down = ...", owner)
+    local open = Snippet(ns.Ring.OPEN_SUBRING_SNIPPET, "local self = ...", owner)
     local button = Handle()
     return {
         owner = owner,
         button = button,
+        subrings = opened,
         Click = function(down, mouseX, mouseY)
             screen.mouse = { mouseX, mouseY }
-            return snippet(button, "LeftButton", down)
+            return click(button, "LeftButton", down)
+        end,
+        Hover = function(index, mouseX, mouseY)
+            screen.mouse = { mouseX, mouseY }
+            open(Handle({ ["slice-index"] = index }))
         end,
     }
 end
@@ -534,6 +593,48 @@ end)
 
 test("a macro with neither spell nor item clears the swipe", function()
     eq(shown({ type = "macro", value = "Chat" }), "clear")
+end)
+
+test("snippet: hovering a ring slice opens that ring at the cursor", function()
+    local harness = SnippetHarness(directions, { "ring", "item", "item", "item" }, { [1] = {} })
+    harness.Click(true, 0.5, 0.5)
+    harness.Hover(1, 0.5, 0.6)
+    eq(harness.owner:IsShown(), false, "main ring")
+    eq(harness.subrings[1]:IsShown(), true, "sub-ring")
+    eq(harness.subrings[1]:GetAttribute("center-y"), 600, "centred on cursor")
+end)
+
+test("snippet: key up in a sub-ring uses the sub-ring's aimed slice", function()
+    local harness = SnippetHarness(directions, { "ring", "item", "item", "item" },
+        { [1] = { "spell", "spell", "spell", "spell" } })
+    harness.Click(true, 0.5, 0.5)
+    harness.Hover(1, 0.5, 0.6)
+    harness.Click(false, 0.6, 0.6)
+    eq(harness.subrings[1]:IsShown(), false, "sub-ring closed")
+    eq(harness.button:GetAttribute("type"), "spell")
+    eq(harness.button:GetAttribute("spell"), "sub1-value-2")
+end)
+
+test("snippet: releasing on a ring slice without opening it does nothing", function()
+    local harness = SnippetHarness(directions, { "ring", "item", "item", "item" }, { [1] = {} })
+    harness.Click(true, 0.5, 0.5)
+    eq(harness.Click(false, 0.5, 0.6), false)
+    eq(harness.button:GetAttribute("type"), nil)
+end)
+
+test("snippet: the next key down closes a sub-ring left open", function()
+    local harness = SnippetHarness(directions, { "ring", "item", "item", "item" }, { [1] = {} })
+    harness.Click(true, 0.5, 0.5)
+    harness.Hover(1, 0.5, 0.6)
+    harness.Click(true, 0.5, 0.5)
+    eq(harness.subrings[1]:IsShown(), false, "sub-ring")
+    eq(harness.owner:IsShown(), true, "main ring")
+end)
+
+test("snippet: hovering does nothing while the ring is closed", function()
+    local harness = SnippetHarness(directions, { "ring", "item", "item", "item" }, { [1] = {} })
+    harness.Hover(1, 0.5, 0.6)
+    eq(harness.subrings[1]:IsShown(), false)
 end)
 
 print(("%d passed, %d failed"):format(passed, failures))
