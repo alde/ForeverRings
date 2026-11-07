@@ -136,6 +136,7 @@ function ns.Context.Build()
         randomFavoriteMount = RandomFavoriteMount,
         favoriteMounts = FavoriteMounts,
         addonLoaded = IsAddOnLoaded,
+        spellUses = ns.Config.SpellUses,
     }
 end
 

@@ -1,10 +1,11 @@
 ## Interface: 16001
 ## Title: ForeverRings
-## Version: 12
+## Version: 13
 ## Notes: Radial action rings that fill themselves
 ## Author: Rickard Dybeck
 ## IconTexture: Interface\Icons\INV_Misc_Bag_08
 ## SavedVariables: ForeverRingsDB
+## SavedVariablesPerCharacter: ForeverRingsCharDB
 ## Category: Action Bars
 ## AddonCompartmentFunc: ForeverRings_OpenOptions
 

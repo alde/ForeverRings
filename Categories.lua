@@ -25,6 +25,9 @@ local USE_SPELL = {
     RESTORE_MANA = 437,   -- "Restore Mana", cast by mana potions
 }
 
+-- Slices the Most Used Totems category fills, one per element on average.
+local MOST_USED_TOTEM_SLICES = 4
+
 local HEARTHSTONE_ITEM_IDS = {
     [6948] = true, -- Hearthstone
 }
@@ -41,6 +44,28 @@ local function SortedByLabel(actions)
     for index, action in ipairs(actions) do sorted[index] = action end
     table.sort(sorted, ByLabel)
     return sorted
+end
+
+-- Known spells from spellIDs that have been cast at least once, most
+-- cast first, list order breaking ties, capped at limit.
+local function MostUsed(context, spellIDs, limit)
+    local used = {}
+    for order, spellID in ipairs(spellIDs) do
+        local action = context.spell(spellID)
+        local uses = action and context.spellUses(action.value) or 0
+        if uses > 0 then
+            used[#used + 1] = { action = action, uses = uses, order = order }
+        end
+    end
+    table.sort(used, function(a, b)
+        if a.uses ~= b.uses then return a.uses > b.uses end
+        return a.order < b.order
+    end)
+    local actions = {}
+    for index = 1, math.min(limit, #used) do
+        actions[index] = used[index].action
+    end
+    return actions
 end
 
 local function IsConsumable(item, ...)
@@ -114,6 +139,14 @@ local CATEGORIES = {
     { key = "teleport", label = "Teleports", spellIDs = ns.SpellLists.teleport },
     { key = "portal", label = "Portals", spellIDs = ns.SpellLists.portal },
     { key = "buff", label = "Class Buffs", spellIDs = ns.SpellLists.buff },
+    { key = "earthtotem", label = "Earth Totems", spellIDs = ns.SpellLists.earthTotem },
+    { key = "firetotem", label = "Fire Totems", spellIDs = ns.SpellLists.fireTotem },
+    { key = "watertotem", label = "Water Totems", spellIDs = ns.SpellLists.waterTotem },
+    { key = "airtotem", label = "Air Totems", spellIDs = ns.SpellLists.airTotem },
+    {
+        key = "frequenttotem", label = "Most Used Totems",
+        collect = function(context) return MostUsed(context, ns.SpellLists.totem, MOST_USED_TOTEM_SLICES) end,
+    },
     {
         key = "randommount", label = "Random Favourite Mount",
         collect = function(context) return { context.randomFavoriteMount() } end,

@@ -105,3 +105,52 @@ ns.SpellLists.buff = {
     20043, -- Aspect of the Wild
     19506, -- Trueshot Aura
 }
+
+-- Shaman totems by element, rank 1 IDs.
+ns.SpellLists.earthTotem = {
+    8075,  -- Strength of Earth Totem
+    8071,  -- Stoneskin Totem
+    2484,  -- Earthbind Totem
+    5730,  -- Stoneclaw Totem
+    8143,  -- Tremor Totem
+    2062,  -- Earth Elemental Totem
+}
+
+ns.SpellLists.fireTotem = {
+    3599,  -- Searing Totem
+    8190,  -- Magma Totem
+    1535,  -- Fire Nova Totem
+    8227,  -- Flametongue Totem
+    8181,  -- Frost Resistance Totem
+    30706, -- Totem of Wrath
+    2894,  -- Fire Elemental Totem
+}
+
+ns.SpellLists.waterTotem = {
+    5675,  -- Mana Spring Totem
+    5394,  -- Healing Stream Totem
+    16190, -- Mana Tide Totem
+    8166,  -- Poison Cleansing Totem
+    8170,  -- Disease Cleansing Totem
+    8184,  -- Fire Resistance Totem
+}
+
+ns.SpellLists.airTotem = {
+    8512,  -- Windfury Totem
+    8835,  -- Grace of Air Totem
+    3738,  -- Wrath of Air Totem
+    8177,  -- Grounding Totem
+    25908, -- Tranquil Air Totem
+    10595, -- Nature Resistance Totem
+    15107, -- Windwall Totem
+    6495,  -- Sentry Totem
+}
+
+-- Every totem, for counting casts and picking the most used.
+ns.SpellLists.totem = {}
+for _, element in ipairs({ ns.SpellLists.earthTotem, ns.SpellLists.fireTotem,
+                           ns.SpellLists.waterTotem, ns.SpellLists.airTotem }) do
+    for _, spellID in ipairs(element) do
+        ns.SpellLists.totem[#ns.SpellLists.totem + 1] = spellID
+    end
+end

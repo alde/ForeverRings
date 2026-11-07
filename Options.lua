@@ -101,7 +101,7 @@ local function PopupEditBox(dialog)
 end
 
 StaticPopupDialogs[NEW_RING_POPUP] = {
-    text = "Name for the new ring (letters, digits, - and _):",
+    text = "Name for the new ring (letters, digits, spaces, - and _):",
     button1 = ACCEPT,
     button2 = CANCEL,
     hasEditBox = true,

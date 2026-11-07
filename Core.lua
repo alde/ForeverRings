@@ -85,12 +85,41 @@ local function RefreshCounts()
     end
 end
 
+-- Names of the spells whose casts are counted, built on first cast:
+-- spell names are not available while the addon is still loading.
+local countedSpellNames
+
+local function CountedSpellNames()
+    if not countedSpellNames then
+        countedSpellNames = {}
+        for _, spellID in ipairs(ns.SpellLists.totem) do
+            local name = C_Spell.GetSpellName(spellID)
+            if name then countedSpellNames[name] = true end
+        end
+    end
+    return countedSpellNames
+end
+
+-- Counts by name so every rank of a spell adds to one tally. Spell IDs
+-- can be secret values in combat on this client; those casts go
+-- uncounted rather than erroring.
+local function CountCast(unit, _, spellID)
+    if unit ~= "player" or (issecretvalue and issecretvalue(spellID)) then return end
+    local name = C_Spell.GetSpellName(spellID)
+    if name and CountedSpellNames()[name] then
+        ns.Config.RecordSpellUse(name)
+        ns.RequestRebuild()
+    end
+end
+
 local handlers = {
     ADDON_LOADED = function(loadedName)
         if loadedName == addonName then
             ForeverRingsDB = ns.Config.Load(ForeverRingsDB)
+            ForeverRingsCharDB = ns.Config.LoadCharacter(ForeverRingsCharDB)
         end
     end,
+    UNIT_SPELLCAST_SUCCEEDED = CountCast,
     -- A /reload mid-fight logs in under combat lockdown.
     PLAYER_LOGIN = function()
         ns.RunOutOfCombat("rebuild", ns.RebuildRings)

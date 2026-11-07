@@ -39,7 +39,7 @@ up when combat ends.
 
 ## Rings
 
-A fresh install comes with five unbound rings:
+A fresh install comes with these unbound rings:
 
 | Ring        | Holds                                                             |
 |-------------|-------------------------------------------------------------------|
@@ -48,6 +48,8 @@ A fresh install comes with five unbound rings:
 | Buffs       | Class buffs, conjured food and water included                     |
 | Quest       | Quest items you can use                                           |
 | Mounts      | Random favourite mount, then each favourite                       |
+| Totems      | Your four most used totems, plus a slice opening each element ring |
+| Earth, Fire, Water and Air Totems | Every totem of that element you know  |
 
 A ring is an ordered list of slots. Each slot is either:
 
@@ -77,12 +79,19 @@ the Up and Down buttons in the options window.
 | Teleports          | one per spell | Mage teleports, Moonglade, Astral Recall, Death Gate |
 | Portals            | one per spell | Mage portals                                  |
 | Class Buffs        | one per spell | Buffs, armours, aspects, blessings, weapon enchants, conjuring |
+| Earth/Fire/Water/Air Totems | one per spell | Shaman totems of that element |
+| Most Used Totems   | up to four    | The totems this character casts most          |
 | Random Favourite Mount | one       | The mount journal's random favourite          |
 | Favourite Mounts   | one per mount | Collected favourites, by name                 |
 
 If the [Hearths](https://github.com/alde/hearths) addon is loaded, the
 Hearthstone slot uses its `HEARTHS_BTN` macro instead, so the ring
 rotates hearthstones along with it.
+
+Most Used Totems counts every totem cast by this character, from the
+ring or anywhere else, and keeps the counts between sessions. It is
+empty until you have cast a totem, and its order catches up after
+combat.
 
 Mounts come from the mount journal. A mount you can't use where you
 are still shows, rather than the ring emptying every time you go

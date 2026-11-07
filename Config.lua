@@ -6,6 +6,9 @@
 --   rings = { [name] = { key = "CTRL-Q", slots = { slot, ... } } },
 --   animation = { style = "grow", duration = 0.15 },
 -- }
+-- ForeverRingsCharDB, per character = {
+--   spellUses = { [spell name] = casts },
+-- }
 -- A slot is one of { category = key }, { item = itemID },
 -- { spell = spellID }, { macro = name } or { ring = name }.
 local _, ns = ...
@@ -13,7 +16,8 @@ local _, ns = ...
 -- 1: rings held a categories list. 2: rings hold slots.
 -- 3: potions and food & drink split into best-item categories.
 -- 4: a Mounts ring.
-local SCHEMA_VERSION = 4
+-- 5: Totems rings.
+local SCHEMA_VERSION = 5
 
 -- The default rings as of version 2. Later migrations bring them up to
 -- date along with everyone else's rings.
@@ -38,6 +42,25 @@ local function CategorySlots(keys)
     for index, key in ipairs(keys) do
         slots[index] = { category = key }
     end
+    return slots
+end
+
+-- Version 5: one ring per totem element, opened from a Totems ring that
+-- also holds the most used totems.
+local TOTEM_RINGS = {
+    ["Earth Totems"] = "earthtotem",
+    ["Fire Totems"] = "firetotem",
+    ["Water Totems"] = "watertotem",
+    ["Air Totems"] = "airtotem",
+}
+local TOTEM_ELEMENT_ORDER = { "Earth Totems", "Fire Totems", "Water Totems", "Air Totems" }
+
+local function TotemsSlots()
+    local slots = {}
+    for index, name in ipairs(TOTEM_ELEMENT_ORDER) do
+        slots[index] = { ring = name }
+    end
+    slots[#slots + 1] = { category = "frequenttotem" }
     return slots
 end
 
@@ -73,6 +96,12 @@ local MIGRATIONS = {
     end,
     function(db)
         db.rings.Mounts = db.rings.Mounts or { slots = CategorySlots({ "randommount", "mount" }) }
+    end,
+    function(db)
+        for name, category in pairs(TOTEM_RINGS) do
+            db.rings[name] = db.rings[name] or { slots = CategorySlots({ category }) }
+        end
+        db.rings.Totems = db.rings.Totems or { slots = TotemsSlots() }
     end,
 }
 
@@ -126,8 +155,8 @@ end
 
 -- Returns a problem description, or nil when the name is usable.
 function Config.ValidateNewRingName(name)
-    if not name or not name:match("^[%w_%-]+$") then
-        return "ring names are letters, digits, - and _ only."
+    if not name or not name:match("^[%w_%-][%w_%- ]*$") or name:match(" $") then
+        return "ring names are letters, digits, spaces, - and _."
     end
     if Config.FindRingName(name) then
         return "there is already a ring called " .. name .. "."
@@ -196,4 +225,20 @@ end
 
 function Config.SetAnimationDuration(seconds)
     ForeverRingsDB.animation.duration = seconds
+end
+
+-- Per-character settings: cast counts behind "most used" categories.
+function Config.LoadCharacter(saved)
+    local db = saved or {}
+    db.spellUses = db.spellUses or {}
+    return db
+end
+
+function Config.RecordSpellUse(name)
+    local uses = ForeverRingsCharDB.spellUses
+    uses[name] = (uses[name] or 0) + 1
+end
+
+function Config.SpellUses(name)
+    return ForeverRingsCharDB.spellUses[name] or 0
 end

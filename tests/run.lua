@@ -81,6 +81,7 @@ local function context(bags, options)
             return macros[name] and { type = "macro", value = name } or nil
         end,
         addonLoaded = function(name) return options.addons and options.addons[name] or false end,
+        spellUses = function(name) return options.uses and options.uses[name] or 0 end,
         randomFavoriteMount = function() return options.randomMount end,
         favoriteMounts = function() return options.mounts or {} end,
     }
@@ -210,6 +211,33 @@ test("a ring slot becomes one slice when the context offers that ring", function
     eq(values(resolve({ { ring = "Fire" }, { ring = "Gone" } }, game, 12)), "Fire")
 end)
 
+test("each totem element has its own category", function()
+    local known = { [3599] = "Searing Totem", [5675] = "Mana Spring Totem" }
+    local game = context({}, { knownSpells = known })
+    eq(values(resolve(categories("firetotem"), game, 12)), "Searing Totem", "fire")
+    eq(values(resolve(categories("watertotem"), game, 12)), "Mana Spring Totem", "water")
+    eq(values(resolve(categories("airtotem"), game, 12)), "", "air")
+end)
+
+test("most used totems: top four by casts, ties in list order, unused left out", function()
+    local known = {
+        [8075] = "Strength of Earth Totem", [2484] = "Earthbind Totem", [3599] = "Searing Totem",
+        [5675] = "Mana Spring Totem", [8512] = "Windfury Totem", [8177] = "Grounding Totem",
+    }
+    local uses = {
+        ["Windfury Totem"] = 9, ["Searing Totem"] = 4, ["Mana Spring Totem"] = 4,
+        ["Strength of Earth Totem"] = 2, ["Grounding Totem"] = 1,
+    }
+    local game = context({}, { knownSpells = known, uses = uses })
+    eq(values(resolve(categories("frequenttotem"), game, 12)),
+        "Windfury Totem,Searing Totem,Mana Spring Totem,Strength of Earth Totem")
+end)
+
+test("most used totems skip totems the character no longer knows", function()
+    local game = context({}, { uses = { ["Searing Totem"] = 5 } })
+    eq(values(resolve(categories("frequenttotem"), game, 12)), "")
+end)
+
 local function subring(rings, parent, target, game)
     return ns.Actions.SubringAction(rings, game or context({}), parent, target, 12)
 end
@@ -275,7 +303,9 @@ InCombatLockdown = function() return false end
 
 local function categoryList(slots)
     local out = {}
-    for index, slot in ipairs(slots) do out[index] = slot.category or slot.item or slot.spell or slot.macro end
+    for index, slot in ipairs(slots) do
+        out[index] = slot.category or slot.item or slot.spell or slot.macro or slot.ring
+    end
     return table.concat(out, ",")
 end
 
@@ -286,6 +316,8 @@ test("a fresh install gets the default rings with split categories", function()
     eq(categoryList(db.rings.Buffs.slots), "buff")
     eq(categoryList(db.rings.Quest.slots), "quest")
     eq(categoryList(db.rings.Mounts.slots), "randommount,mount")
+    eq(categoryList(db.rings.Totems.slots), "Earth Totems,Fire Totems,Water Totems,Air Totems,frequenttotem")
+    eq(categoryList(db.rings["Fire Totems"].slots), "firetotem")
     eq(db.animation.style, ns.Animation.DEFAULT_STYLE)
 end)
 
@@ -310,6 +342,21 @@ test("version 3 settings gain a Mounts ring, keeping one the user made", functio
     eq(categoryList(own.rings.Mounts.slots), "Mine", "user's own ring")
 end)
 
+test("version 4 settings gain the Totems rings", function()
+    local db = ns.Config.Load({ version = 4, rings = {} })
+    eq(categoryList(db.rings["Air Totems"].slots), "airtotem", "element ring")
+    eq(categoryList(db.rings.Totems.slots), "Earth Totems,Fire Totems,Water Totems,Air Totems,frequenttotem")
+end)
+
+test("casts are counted per spell name", function()
+    ForeverRingsCharDB = ns.Config.LoadCharacter(nil)
+    ns.Config.RecordSpellUse("Searing Totem")
+    ns.Config.RecordSpellUse("Searing Totem")
+    eq(ns.Config.SpellUses("Searing Totem"), 2, "counted")
+    eq(ns.Config.SpellUses("Magma Totem"), 0, "never cast")
+    eq(ns.Config.LoadCharacter(ForeverRingsCharDB).spellUses["Searing Totem"], 2, "kept on reload")
+end)
+
 test("default rings deleted before an upgrade stay deleted", function()
     eq(ns.Config.Load({ version = 2, rings = {} }).rings.Travel, nil)
 end)
@@ -325,7 +372,10 @@ end)
 test("ring names are validated", function()
     ForeverRingsDB = ns.Config.Load(nil)
     eq(ns.Config.ValidateNewRingName("My_Ring-2"), nil, "valid")
-    assert(ns.Config.ValidateNewRingName("two words"), "spaces")
+    eq(ns.Config.ValidateNewRingName("Two Words"), nil, "inner space")
+    assert(ns.Config.ValidateNewRingName(" Leading"), "leading space")
+    assert(ns.Config.ValidateNewRingName("Trailing "), "trailing space")
+    assert(ns.Config.ValidateNewRingName("a/b"), "punctuation")
     assert(ns.Config.ValidateNewRingName("travel"), "taken, any case")
     assert(ns.Config.ValidateNewRingName(nil), "missing")
 end)
