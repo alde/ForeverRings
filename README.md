@@ -149,11 +149,12 @@ default ring you deleted.
 
 ## Releasing
 
-`## Version` in the TOC is a plain number equal to the commit count.
-Every commit bumps it by one, in the same commit, so any installed
-copy can be traced to the commit it came from.
+`## Version` in the TOC is a plain number. It started at the commit
+count and goes up by one every time something lands on `master`,
+whether a direct commit or a merged pull request, because each of
+those is a release candidate. A pull request carries its own bump.
 
-To release, tag a commit with its version and push the tag.
+To release, tag a commit on `master` with its version and push the tag.
 
 The tag starts the GitHub Actions workflow, which packages the addon
 with the [BigWigs packager](https://github.com/BigWigsMods/packager).
